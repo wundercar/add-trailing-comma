@@ -64,7 +64,6 @@ class FindNodes(ast.NodeVisitor):
         self.funcs: Dict[Offset, Node] = {}
         self.literals: Dict[Offset, ast.expr] = {}
         self.tuples: Dict[Offset, ast.Tuple] = {}
-        self.imports: Set[Offset] = set()
         self.classes: Dict[Offset, Node] = {}
 
     def _visit_literal(self, node: ast.expr, key: str = 'elts') -> None:
@@ -135,10 +134,6 @@ class FindNodes(ast.NodeVisitor):
             key = _to_offset(node)
             self.funcs[key] = Node(has_starargs, arg_offsets)
 
-        self.generic_visit(node)
-
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
-        self.imports.add(_to_offset(node))
         self.generic_visit(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
@@ -424,13 +419,6 @@ def _fix_src(contents_text: str, py35_plus: bool, py36_plus: bool) -> str:
                 tokens, _find_simple(i, tokens),
                 add_comma=True,
                 remove_comma=not _one_el_tuple(visitor.literals[token.offset]),
-            )
-        elif token.offset in visitor.imports:
-            # some imports do not have parens
-            _fix_brace(
-                tokens, _find_import(i, tokens),
-                add_comma=True,
-                remove_comma=True,
             )
         # Handle parenthesized things, unhug of tuples, and comprehensions
         elif token.src in START_BRACES:
